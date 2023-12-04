@@ -15,12 +15,12 @@ router.use((req, res, next) => {
   next();
 });
 
-router
-  .route("/")
-  .get(filesController.findAll)
-  // .post(filesController.addMany);
-  .post(filesController.addOne);
+// router
+//   .route("/")
+//   .get(filesController.findAll)
+//   // .post(filesController.addMany);
+//   .post(filesController.addOne);
 
-router.route("/:fileId").get(filesController.findOne);
+// router.route("/:fileId").get(filesController.findOne);
 
 module.exports = router;
