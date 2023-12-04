@@ -71,7 +71,6 @@ exports.createUser = async (req, res) => {
       email: req.body.email,
       username: req.body.username,
       name: req.body.name,
-      // password: req.password
       password: bcrypt.hashSync(req.body.password, 10)
     });
     return res.status(201).json({
@@ -116,7 +115,7 @@ exports.login = async (req, res) => {
     const token = jwt.sign({ id: user.id}, config.SECRET, {
       expiresIn: "24h", // 24 hours
     });
-    
+
     return res.status(200).json({
       success: true,
       accessToken: token,
