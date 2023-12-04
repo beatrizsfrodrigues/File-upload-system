@@ -1,10 +1,10 @@
 const db = require("../models");
 const File = db.files;
 
-// * find all files
+// ? find all files uploaded by logged user
 exports.findAll = async (req, res) => {
   try {
-    let files = await File.findAll().exec();
+    let files = await File.find({ userId: req.loggedUser.id }).exec();
     res.status(200).json({ success: true, files: files });
   } catch (err) {
     return res.status(500).json({
@@ -14,39 +14,32 @@ exports.findAll = async (req, res) => {
   }
 };
 
+// ? add one
 exports.addOne = async (req, res) => {
   try {
+    console.log(req.loggedUser);
+
     let today = new Date();
-    console.log(today);
+
+    let date =
+      today.getDate() +
+      "/" +
+      (today.getMonth() + 1) +
+      "/" +
+      today.getFullYear() +
+      " " +
+      today.getHours() +
+      ":" +
+      today.getMinutes() +
+      ":" +
+      today.getSeconds();
 
     let file = await File.create({
-      name: "test name",
-      path: "test path",
-      userId: "test id",
-      dateAdded:
-        today.getDate() +
-        "-" +
-        (today.getMonth() + 1) +
-        "-" +
-        today.getFullYear() +
-        " " +
-        today.getHours() +
-        ":" +
-        today.getMinutes() +
-        ":" +
-        today.getSeconds(),
-      dateLastEdited:
-        today.getDate() +
-        "-" +
-        (today.getMonth() + 1) +
-        "-" +
-        today.getFullYear() +
-        " " +
-        today.getHours() +
-        ":" +
-        today.getMinutes() +
-        ":" +
-        today.getSeconds(),
+      name: req.body.name,
+      path: req.body.path,
+      userId: req.loggedUser.id,
+      dateAdded: date,
+      dateLastEdited: date,
     });
     return res.status(201).json({
       success: true,
