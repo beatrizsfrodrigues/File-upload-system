@@ -3,7 +3,11 @@ module.exports = (mongoose) => {
     {
       name: String,
       path: String,
-      userId: String,
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        allowNull: false,
+        required: true,
+      },
       dateAdded: String,
       dateLastEdited: String,
     },
