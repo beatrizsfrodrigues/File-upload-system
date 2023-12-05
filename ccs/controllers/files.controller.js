@@ -17,8 +17,6 @@ exports.findAll = async (req, res) => {
 // ? add one
 exports.addOne = async (req, res) => {
   try {
-    console.log(req.loggedUser);
-
     let today = new Date();
 
     let date =

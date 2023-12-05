@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const config = require("../config/db.config.js");
 const db = require("../models");
 const User = db.users;
+const fs = require("fs");
 
 // * find all users
 exports.findAll = async (req, res) => {
@@ -71,7 +72,7 @@ exports.createUser = async (req, res) => {
       email: req.body.email,
       username: req.body.username,
       name: req.body.name,
-      password: bcrypt.hashSync(req.body.password, 10)
+      password: bcrypt.hashSync(req.body.password, 10),
     });
     return res.status(201).json({
       success: true,
@@ -112,8 +113,24 @@ exports.login = async (req, res) => {
       });
 
     // sign the given payload (user ID and type) into a JWT payload – builds JWT token, using secret key
-    const token = jwt.sign({ id: user.id}, config.SECRET, {
+    const token = jwt.sign({ id: user.id }, config.SECRET, {
       expiresIn: "24h", // 24 hours
+    });
+
+    let today = new Date();
+
+    // padStart puts 0 before number if it only has one digit
+    let data = `\n${user.id};${today.getFullYear()}${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")};${String(
+      today.getHours()
+    ).padStart(2, "0")}${String(today.getMinutes()).padStart(2, "0")}${String(
+      today.getSeconds()
+    ).padStart(2, "0")}`;
+
+    fs.appendFile("./logbooks/logbook_login.txt", data, (err) => {
+      // In case of a error throw err.
+      if (err) throw err;
     });
 
     return res.status(200).json({
@@ -128,9 +145,9 @@ exports.login = async (req, res) => {
     //     msg: err.errors.map((e) => e.message),
     //   });
     // else
-      res.status(500).json({
-        success: false,
-        msg: err.message || "Some error occurred at login.",
-      });
+    res.status(500).json({
+      success: false,
+      msg: err.message || "Some error occurred at login.",
+    });
   }
 };
