@@ -19,7 +19,10 @@ router
   .route("/")
   .post(authController.verifyToken, filesController.addOne)
   .get(authController.verifyToken, filesController.findAll);
-// .post(filesController.addMany);
+
+router
+  .route("/addMany")
+  .post(authController.verifyToken, filesController.addMany);
 
 // router.route("/:fileId").get(filesController.findOne);
 
