@@ -1,5 +1,21 @@
 const db = require("../models");
 const File = db.files;
+const fs = require("fs");
+
+let today = new Date();
+
+let date =
+  today.getDate() +
+  "/" +
+  (today.getMonth() + 1) +
+  "/" +
+  today.getFullYear() +
+  " " +
+  today.getHours() +
+  ":" +
+  today.getMinutes() +
+  ":" +
+  today.getSeconds();
 
 // ? find all files uploaded by logged user
 exports.findAll = async (req, res) => {
@@ -17,20 +33,6 @@ exports.findAll = async (req, res) => {
 // ? add one
 exports.addOne = async (req, res) => {
   try {
-    let today = new Date();
-
-    let date =
-      today.getDate() +
-      "/" +
-      (today.getMonth() + 1) +
-      "/" +
-      today.getFullYear() +
-      " " +
-      today.getHours() +
-      ":" +
-      today.getMinutes() +
-      ":" +
-      today.getSeconds();
 
     let file = await File.create({
       name: req.body.name,
@@ -55,30 +57,15 @@ exports.addOne = async (req, res) => {
 // ? add many
 exports.addMany = async (req, res) => {
   try {
-    let today = new Date();
-
-    let date =
-      today.getDate() +
-      "/" +
-      (today.getMonth() + 1) +
-      "/" +
-      today.getFullYear() +
-      " " +
-      today.getHours() +
-      ":" +
-      today.getMinutes() +
-      ":" +
-      today.getSeconds();
 
       // padStart puts 0 before number if it only has one digit
-      let data = `\n${user.id};${today.getFullYear()}${String(
+      let data = `\n${req.loggedUser.id};${today.getFullYear()}${String(
         today.getMonth() + 1
       ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")};${String(
         today.getHours()
       ).padStart(2, "0")}${String(today.getMinutes()).padStart(2, "0")}${String(
         today.getSeconds()
-      ).padStart(2, "0")};uploaded ${req.body.files.length} files:
-      `;
+      ).padStart(2, "0")};uploaded ${req.body.files.length} files: `;
 
 //! FALTA POR O ID DE CADA FICHEIRO NO LOGBOOK
 
@@ -90,6 +77,8 @@ exports.addMany = async (req, res) => {
           dateAdded: date,
           dateLastEdited: date,
         });
+
+        data += `${file.id};`
       }
   
       fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {

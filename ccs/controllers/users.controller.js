@@ -23,7 +23,6 @@ exports.createUser = async (req, res) => {
   try {
     let arr = [
       req.body.email,
-      req.body.username,
       req.body.name,
       req.body.password,
       req.body.confPassword,
@@ -35,13 +34,6 @@ exports.createUser = async (req, res) => {
           .status(400)
           .json({ success: false, msg: `Please provide ${keys[i]}!` });
       }
-    }
-
-    if (/\s/g.test(req.body.username)) {
-      return res.status(400).json({
-        success: false,
-        msg: `Your username can't contain spaces!`,
-      });
     }
 
     if (/\s/g.test(req.body.password)) {

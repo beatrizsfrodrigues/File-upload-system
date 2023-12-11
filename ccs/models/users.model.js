@@ -7,12 +7,6 @@ module.exports = (mongoose) => {
         allowNull: false,
         required: true,
       },
-      username: {
-        type: String,
-        unique: true,
-        allowNull: false,
-        required: true,
-      },
       name: String,
       password: String,
     },
