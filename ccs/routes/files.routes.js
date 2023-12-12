@@ -24,6 +24,11 @@ router
   .route("/addMany")
   .post(authController.verifyToken, filesController.addMany);
 
+router
+  .route("/:fileID")
+  .get(authController.verifyToken, filesController.findOne)
+  .delete(authController.verifyToken, filesController.deleteFile)
+
 // router.route("/:fileId").get(filesController.findOne);
 
 module.exports = router;

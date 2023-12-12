@@ -112,11 +112,11 @@ exports.login = async (req, res) => {
     let today = new Date();
 
     // padStart puts 0 before number if it only has one digit
-    let data = `\n${user.id};${today.getFullYear()}${String(
+    let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
       today.getMonth() + 1
-    ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")};${String(
+    ).padStart(2, "0")}-${today.getFullYear()};${String(
       today.getHours()
-    ).padStart(2, "0")}${String(today.getMinutes()).padStart(2, "0")}${String(
+    ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
       today.getSeconds()
     ).padStart(2, "0")}`;
 
