@@ -2,7 +2,6 @@ module.exports = (mongoose) => {
   const schema = mongoose.Schema(
     {
       name: String,
-      path: String,
       userId: {
         type: mongoose.Schema.Types.ObjectId,
         allowNull: false,
@@ -10,6 +9,7 @@ module.exports = (mongoose) => {
       },
       dateAdded: String,
       dateLastEdited: String,
+      file: { type: String }
     },
     { timestamps: false }
   );

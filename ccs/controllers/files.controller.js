@@ -1,6 +1,9 @@
 const db = require("../models");
 const File = db.files;
 const fs = require("fs");
+const aws = require("aws-sdk");
+const request = require("request")
+require("dotenv/config")
 
 let today = new Date();
 
@@ -45,10 +48,10 @@ exports.addOne = async (req, res) => {
     //create a new file in the database
     let file = await File.create({
       name: req.body.name,
-      path: req.body.path,
       userId: req.loggedUser.id,
       dateAdded: date,
       dateLastEdited: date,
+      file: data.Location
     });
 
     //attach file id and get the new action on the logbook
@@ -198,3 +201,34 @@ exports.deleteFile = async (req, res) => {
     });
   }
 };
+
+exports.downloadFile = async (req, res) => {
+  try {
+    const file = await File.findById(req.params.fileID);
+
+    if (!file) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found"
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      download_link: `Download your file with the following link ${file.file}`,
+    });
+
+  } catch (err) {
+    console.log(err);
+    if (err.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        msg: "id parameter is not a valid object id",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      msg: `error retrieving file with ID ${req.params.fileID}`,
+    });
+  }
+}
