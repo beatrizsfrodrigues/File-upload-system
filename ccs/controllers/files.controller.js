@@ -2,8 +2,7 @@ const db = require("../models");
 const File = db.files;
 const fs = require("fs");
 const aws = require("aws-sdk");
-const request = require("request")
-require("dotenv/config")
+require("dotenv/config");
 
 let today = new Date();
 
@@ -19,6 +18,11 @@ let date =
   today.getMinutes() +
   ":" +
   today.getSeconds();
+
+const s3 = new aws.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
 // ? find all files uploaded by logged user
 exports.findAll = async (req, res) => {
@@ -36,36 +40,60 @@ exports.findAll = async (req, res) => {
 // ? add one
 exports.addOne = async (req, res) => {
   try {
-    //register the user, date, hour and action
-    let data = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${today.getFullYear()};${String(
-      today.getHours()
-    ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
-      today.getSeconds()
-    ).padStart(2, "0")} uploaded file: `;
+    console.log(req.file);
+    if (req.file) {
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: req.file.originalname,
+        Body: req.file.buffer,
+      };
 
-    //create a new file in the database
-    let file = await File.create({
-      name: req.body.name,
-      userId: req.loggedUser.id,
-      dateAdded: date,
-      dateLastEdited: date,
-      file: data.Location
-    });
+      s3.upload(params, (error, data) => {
+        console.log(data);
 
-    //attach file id and get the new action on the logbook
-    data += `${file.id};`
-    fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
-      // In case of a error throw err.
-      if (err) throw err;
-    });
+        let logData = `\n${req.loggedUser.id};${String(
+          today.getDate()
+        ).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${today.getFullYear()};${String(today.getHours()).padStart(
+          2,
+          "0"
+        )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+          today.getSeconds()
+        ).padStart(2, "0")} uploaded file: `;
 
-    return res.status(201).json({
-      success: true,
-      msg: "File was added successfully!",
-      file: file,
-    });
+        const file = new File({
+          name: req.body.name,
+          userId: req.loggedUser.id,
+          dateAdded: date,
+          dateLastEdited: date,
+          file: data.Location,
+        });
+        file.save().then((result) => {
+          res.status(200).send({
+            _id: result._id,
+            name: result.name,
+            userId: req.loggedUser.id,
+            dateAdded: date,
+            dateLastEdited: date,
+            file: data.Location,
+          });
+
+          //attach file id and get the new action on the logbook
+          logData += `${file.id};`;
+          fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+            // In case of a error throw err.
+            if (err) throw err;
+          });
+        });
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        msg: "No file provided. Please provide a valid file for upload.",
+      });
+    }
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -77,36 +105,40 @@ exports.addOne = async (req, res) => {
 // * add many
 exports.addMany = async (req, res) => {
   try {
+    // padStart puts 0 before number if it only has one digit
+    let data = `\n${user.id};${String(today.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${today.getFullYear()};${String(today.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+      today.getSeconds()
+    ).padStart(2, "0")}; uploaded ${req.body.files.length} files: `;
 
-      // padStart puts 0 before number if it only has one digit
-      let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
-        today.getMonth() + 1
-      ).padStart(2, "0")}-${today.getFullYear()};${String(
-        today.getHours()
-      ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
-        today.getSeconds()
-      ).padStart(2, "0")}; uploaded ${req.body.files.length} files: `;
-
-      for(var i = 0 ; i < req.body.files.length ; i++) {
-        let file = await File.create({
-          name: req.body.files[i].name,
-          path: req.body.files[i].path,
-          userId: req.loggedUser.id,
-          dateAdded: date,
-          dateLastEdited: date,
-        });
-
-        data += `${file.id};`
-      }
-  
-      fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
-        // In case of a error throw err.
-        if (err) throw err;
+    for (var i = 0; i < req.body.files.length; i++) {
+      let file = await File.create({
+        name: req.body.files[i].name,
+        path: req.body.files[i].path,
+        userId: req.loggedUser.id,
+        dateAdded: date,
+        dateLastEdited: date,
       });
+
+      data += `${file.id};`;
+    }
+
+    fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
+      // In case of a error throw err.
+      if (err) throw err;
+    });
 
     return res.status(201).json({
       success: true,
-      msg:  `${req.body.files.length} Files uploaded successfully!`,
+      msg: `${req.body.files.length} Files uploaded successfully!`,
       // file: file,
     });
   } catch (err) {
@@ -121,18 +153,18 @@ exports.addMany = async (req, res) => {
 exports.findOne = async (req, res) => {
   try {
     const file = await File.findById(req.params.fileID);
-    if (file === null){
+    if (file === null) {
       return res.status(404).json({
         success: false,
         msg: `Cannot find any file with ID ${req.params.fileID}`,
       });
-    }else if(req.loggedUser.id != file.userId){
+    } else if (req.loggedUser.id != file.userId) {
       return res.status(403).json({
         success: false,
         msg: "You are not authorized to perform this request!",
       });
-  }
-    
+    }
+
     return res.status(200).json({
       success: true,
       file: file,
@@ -156,12 +188,12 @@ exports.findOne = async (req, res) => {
 exports.deleteFile = async (req, res) => {
   try {
     const file = await File.findByIdAndDelete(req.params.fileID);
-    if (file === null){
+    if (file === null) {
       return res.status(404).json({
         success: false,
         msg: `Cannot find any file with ID ${req.params.fileID}`,
       });
-    }else if(req.loggedUser.id != file.userId){
+    } else if (req.loggedUser.id != file.userId) {
       return res.status(403).json({
         success: false,
         msg: "You are not authorized to perform this request!",
@@ -169,11 +201,16 @@ exports.deleteFile = async (req, res) => {
     }
 
     //update logbook
-    let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${today.getFullYear()};${String(
-      today.getHours()
-    ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+    let data = `\n${user.id};${String(today.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${today.getFullYear()};${String(today.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
       today.getSeconds()
     ).padStart(2, "0")}; deleted file: ${req.params.fileID}`;
 
@@ -186,7 +223,6 @@ exports.deleteFile = async (req, res) => {
       success: true,
       msg: `File with id ${req.params.fileID} was deleted successfully`,
     });
-
   } catch (err) {
     console.log(err);
     if (err.name === "CastError") {
@@ -209,15 +245,14 @@ exports.downloadFile = async (req, res) => {
     if (!file) {
       return res.status(404).json({
         success: false,
-        message: "File not found"
-      })
+        message: "File not found",
+      });
     }
 
     return res.status(200).json({
       success: true,
       download_link: `Download your file with the following link ${file.file}`,
     });
-
   } catch (err) {
     console.log(err);
     if (err.name === "CastError") {
@@ -231,4 +266,4 @@ exports.downloadFile = async (req, res) => {
       msg: `error retrieving file with ID ${req.params.fileID}`,
     });
   }
-}
+};
