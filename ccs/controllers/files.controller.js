@@ -2,7 +2,6 @@ const db = require("../models");
 const File = db.files;
 const fs = require("fs");
 const aws = require("aws-sdk");
-const request = require("request")
 require("dotenv/config")
 
 let today = new Date();
@@ -76,45 +75,47 @@ exports.addOne = async (req, res) => {
 
 // * add many
 exports.addMany = async (req, res) => {
-  try {
 
-      // padStart puts 0 before number if it only has one digit
-      let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
-        today.getMonth() + 1
-      ).padStart(2, "0")}-${today.getFullYear()};${String(
-        today.getHours()
-      ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
-        today.getSeconds()
-      ).padStart(2, "0")}; uploaded ${req.body.files.length} files: `;
 
-      for(var i = 0 ; i < req.body.files.length ; i++) {
-        let file = await File.create({
-          name: req.body.files[i].name,
-          path: req.body.files[i].path,
-          userId: req.loggedUser.id,
-          dateAdded: date,
-          dateLastEdited: date,
-        });
+//   try {
 
-        data += `${file.id};`
-      }
+//       // padStart puts 0 before number if it only has one digit
+//       let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
+//         today.getMonth() + 1
+//       ).padStart(2, "0")}-${today.getFullYear()};${String(
+//         today.getHours()
+//       ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+//         today.getSeconds()
+//       ).padStart(2, "0")}; uploaded ${req.body.files.length} files: `;
+
+//       for(var i = 0 ; i < req.body.files.length ; i++) {
+//         let file = await File.create({
+//           name: req.body.files[i].name,
+//           path: req.body.files[i].path,
+//           userId: req.loggedUser.id,
+//           dateAdded: date,
+//           dateLastEdited: date,
+//         });
+
+//         data += `${file.id};`
+//       }
   
-      fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
-        // In case of a error throw err.
-        if (err) throw err;
-      });
+//       fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
+//         // In case of a error throw err.
+//         if (err) throw err;
+//       });
 
-    return res.status(201).json({
-      success: true,
-      msg:  `${req.body.files.length} Files uploaded successfully!`,
-      // file: file,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: err.message || "Some error occurred.",
-    });
-  }
+//     return res.status(201).json({
+//       success: true,
+//       msg:  `${req.body.files.length} Files uploaded successfully!`,
+//       // file: file,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       msg: err.message || "Some error occurred.",
+//     });
+//   }
 };
 
 // * get one file
