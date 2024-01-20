@@ -2,6 +2,7 @@ const db = require("../models");
 const File = db.files;
 const fs = require("fs");
 const aws = require("aws-sdk");
+const archiver = require("archiver");
 require("dotenv/config");
 
 let today = new Date();
@@ -104,47 +105,91 @@ exports.addOne = async (req, res) => {
 
 // * add many
 exports.addMany = async (req, res) => {
+  try{
+       
+    const zip = archiver('zip');
 
+    // Create a stream to store the zip data
+    const zipStream = fs.createWriteStream('temp.zip');
 
-//   try {
+    // Pipe the zip data to the stream
+    zip.pipe(zipStream);
 
-//       // padStart puts 0 before number if it only has one digit
-//       let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
-//         today.getMonth() + 1
-//       ).padStart(2, "0")}-${today.getFullYear()};${String(
-//         today.getHours()
-//       ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
-//         today.getSeconds()
-//       ).padStart(2, "0")}; uploaded ${req.body.files.length} files: `;
+    // Loop through each file in req.files and add it to the zip archive
+    for (const file of req.files) {
+      zip.append(file.buffer, { name: file.originalname });
+    }
 
-//       for(var i = 0 ; i < req.body.files.length ; i++) {
-//         let file = await File.create({
-//           name: req.body.files[i].name,
-//           path: req.body.files[i].path,
-//           userId: req.loggedUser.id,
-//           dateAdded: date,
-//           dateLastEdited: date,
-//         });
+    // Finalize the zip archive
+    zip.finalize();
 
-//         data += `${file.id};`
-//       }
-  
-//       fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
-//         // In case of a error throw err.
-//         if (err) throw err;
-//       });
+    // Once the zip is finalized, upload it to S3
+    zipStream.on('close', () => {
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: req.body.name + '.zip',
+        Body: fs.createReadStream('temp.zip'),
+      };
 
-//     return res.status(201).json({
-//       success: true,
-//       msg:  `${req.body.files.length} Files uploaded successfully!`,
-//       // file: file,
-//     });
-//   } catch (err) {
-//     res.status(500).json({
-//       success: false,
-//       msg: err.message || "Some error occurred.",
-//     });
-//   }
+      s3.upload(params, (error, data) => {
+        // Delete the temporary zip file
+        fs.unlinkSync('temp.zip');
+
+        if (error) {
+          res.status(500).send({ "err": error });
+        }
+
+        // Your logic for handling the S3 upload response
+        console.log(data);
+      
+      
+
+        let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
+          today.getMonth() + 1
+        ).padStart(2, "0")}-${today.getFullYear()};${String(
+          today.getHours()
+        ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+          today.getSeconds()
+        ).padStart(2, "0")} uploaded file: `;
+
+        const file = new File({
+            name: req.body.name,
+            userId: req.loggedUser.id,
+            dateAdded: date,
+            dateLastEdited: date,
+            file: data.Location
+        });
+      
+        file.save()
+            .then(result => {
+                res.status(201).send({
+                    _id: result._id,
+                    name: result.name,
+                    userId: req.loggedUser.id,
+                    dateAdded: date,
+                    dateLastEdited: date,
+                    file: data.Location,
+                })
+
+                //attach file id and get the new action on the logbook
+                logData += `${file.id};`
+                fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+                  // In case of a error throw err.
+                  if (err) throw err;
+                });
+            })
+            .catch(err => {
+                res.send({ message: err })
+            })
+      })
+    })
+
+  } catch(err){
+    res.status(500).json({
+      success: false,
+      msg: err.message || "Some error occurred.",
+    });
+  }
 };
 
 // * get one file
