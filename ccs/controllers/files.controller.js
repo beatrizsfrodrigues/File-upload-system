@@ -65,7 +65,7 @@ exports.addOne = async (req, res) => {
         ).padStart(2, "0")} uploaded file: `;
 
         const file = new File({
-          name: req.body.name,
+          name: req.file.originalname,
           userId: req.loggedUser.id,
           dateAdded: date,
           dateLastEdited: date,
@@ -139,10 +139,7 @@ exports.addMany = async (req, res) => {
           res.status(500).send({ "err": error });
         }
 
-        // Your logic for handling the S3 upload response
         console.log(data);
-      
-      
 
         let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
           today.getMonth() + 1
@@ -227,7 +224,7 @@ exports.findOne = async (req, res) => {
   }
 };
 
-// ! NAO MOSTRA MSG DE SUCESSO
+// * delete one file
 exports.deleteFile = async (req, res) => {
   try {
     const file = await File.findByIdAndDelete(req.params.fileID);
@@ -243,29 +240,37 @@ exports.deleteFile = async (req, res) => {
       });
     }
 
-    //update logbook
-    let data = `\n${user.id};${String(today.getDate()).padStart(
-      2,
-      "0"
-    )}-${String(today.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${today.getFullYear()};${String(today.getHours()).padStart(
-      2,
-      "0"
-    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
-      today.getSeconds()
-    ).padStart(2, "0")}; deleted file: ${req.params.fileID}`;
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: file.name,
+    };
 
-    fs.appendFile("./logbooks/logbook_files.txt", data, (err) => {
-      // In case of a error throw err.
-      if (err) throw err;
-    });
+    s3.deleteObject(params, (error, data) => {
+      if(error) {
+        res.status(500).send(error)
+      }
 
-    return res.status(204).json({
-      success: true,
-      msg: `File with id ${req.params.fileID} was deleted successfully`,
-    });
+      //update logbook
+      let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${today.getFullYear()};${String(
+        today.getHours()
+      ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+        today.getSeconds()
+      ).padStart(2, "0")} deleted file: `;
+  
+      logData += `${file.id};`
+      fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+        // In case of a error throw err.
+        if (err) throw err;
+      });
+  
+      return res.status(202).json({
+        success: true,
+        msg: `File with id ${req.params.fileID} was deleted successfully`,
+      });
+    })
+
   } catch (err) {
     console.log(err);
     if (err.name === "CastError") {
@@ -281,6 +286,7 @@ exports.deleteFile = async (req, res) => {
   }
 };
 
+// * download one file
 exports.downloadFile = async (req, res) => {
   try {
     const file = await File.findById(req.params.fileID);
