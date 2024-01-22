@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const usersController = require("../controllers/users.controller");
 const authController = require("../controllers/auth.controller");
+const usersController = require("../controllers/users.controller");
 
 router.use((req, res, next) => {
   const start = Date.now();
@@ -16,8 +16,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// router.route("/").get(usersController.findAll);
-// put(usersController.logOut);
+router.route("/logout").get(authController.verifyToken, usersController.logout);
 
 router.route("/login").post(usersController.login);
 

@@ -12,7 +12,7 @@ exports.verifyToken = (req, res, next) => {
 
   try {
     let decoded = jwt.verify(token, config.SECRET);
-    req.loggedUser = { id: decoded.id }; // save user ID and role into request object
+    req.loggedUser = { id: decoded.id }; // save user ID into request object
     next();
   } catch (err) {
     return res.status(401).json({

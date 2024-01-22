@@ -5,19 +5,6 @@ const db = require("../models");
 const User = db.users;
 const fs = require("fs");
 
-// * find all users
-exports.findAll = async (req, res) => {
-  try {
-    let users = await User.findAll;
-    res.status(200).json({ success: true, users: users });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      msg: err.message || "Some error occurred",
-    });
-  }
-};
-
 //? signup
 exports.createUser = async (req, res) => {
   try {
@@ -53,16 +40,11 @@ exports.createUser = async (req, res) => {
       return res
         .status(409)
         .json({ success: false, msg: `Email already in use!` });
-    } else if ((await User.find({ username: req.body.username })).length > 0) {
-      return res
-        .status(409)
-        .json({ success: false, msg: `Username already in use!` });
     }
 
     // Save user to DB
     let user = await User.create({
       email: req.body.email,
-      username: req.body.username,
       name: req.body.name,
       password: bcrypt.hashSync(req.body.password, 10),
     });
@@ -112,13 +94,18 @@ exports.login = async (req, res) => {
     let today = new Date();
 
     // padStart puts 0 before number if it only has one digit
-    let data = `\n${user.id};${String(today.getDate()).padStart(2, "0")}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${today.getFullYear()};${String(
-      today.getHours()
-    ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+    let data = `\n${user.id};${String(today.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${today.getFullYear()};${String(today.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
       today.getSeconds()
-    ).padStart(2, "0")}`;
+    ).padStart(2, "0")};login`;
 
     fs.appendFile("./logbooks/logbook_login.txt", data, (err) => {
       // In case of a error throw err.
@@ -140,6 +127,36 @@ exports.login = async (req, res) => {
     res.status(500).json({
       success: false,
       msg: err.message || "Some error occurred at login.",
+    });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    let today = new Date();
+    let data = `\n${req.loggedUser.id};${String(today.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${today.getFullYear()};${String(today.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+      today.getSeconds()
+    ).padStart(2, "0")};logout`;
+
+    fs.appendFile("./logbooks/logbook_login.txt", data, (err) => {
+      // In case of a error throw err.
+      if (err) throw err;
+    });
+
+    res.status(200).json({ success: true, msg: "Logout" });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      msg: err.message || "Some error occurred",
     });
   }
 };
