@@ -42,8 +42,6 @@ exports.findAll = async (req, res) => {
 exports.addOne = async (req, res) => {
   try {
     let files = await File.find({ userId: req.loggedUser.id }).exec();
-    console.log(files);
-    console.log(req.body);
 
     if (req.file) {
       const params = {
