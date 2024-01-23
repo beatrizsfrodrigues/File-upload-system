@@ -42,7 +42,8 @@ exports.findAll = async (req, res) => {
 exports.addOne = async (req, res) => {
   try {
     let files = await File.find({ userId: req.loggedUser.id }).exec();
-    console.log(files)
+    console.log(files);
+    console.log(req.body);
 
     if (req.file) {
       const params = {
@@ -75,11 +76,11 @@ exports.addOne = async (req, res) => {
         });
         console.log(file);
 
-        let isFile = false
-        files.forEach(aFile => {
-          if(aFile.name === req.file.originalname) {
-            isFile = true
-          } 
+        let isFile = false;
+        files.forEach((aFile) => {
+          if (aFile.name === req.file.originalname) {
+            isFile = true;
+          }
         });
 
         if (isFile) {
@@ -97,14 +98,14 @@ exports.addOne = async (req, res) => {
               dateLastEdited: date,
               file: data.Location,
             });
-  
+
             //attach file id and get the new action on the logbook
             logData += `${file.id};`;
             fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
               // In case of a error throw err.
               if (err) throw err;
             });
-          })
+          });
         }
       });
     } else {
@@ -123,13 +124,13 @@ exports.addOne = async (req, res) => {
 
 // * add many
 exports.addMany = async (req, res) => {
-  try{
+  try {
     let files = await File.find({ userId: req.loggedUser.id }).exec();
-    
-    const zip = archiver('zip');
+
+    const zip = archiver("zip");
 
     // Create a stream to store the zip data
-    const zipStream = fs.createWriteStream('temp.zip');
+    const zipStream = fs.createWriteStream("temp.zip");
 
     // Pipe the zip data to the stream
     zip.pipe(zipStream);
@@ -143,44 +144,48 @@ exports.addMany = async (req, res) => {
     zip.finalize();
 
     // Once the zip is finalized, upload it to S3
-    zipStream.on('close', () => {
+    zipStream.on("close", () => {
       const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: req.body.name + '.zip',
-        Body: fs.createReadStream('temp.zip'),
+        Key: req.body.name + ".zip",
+        Body: fs.createReadStream("temp.zip"),
       };
 
       s3.upload(params, (error, data) => {
         // Delete the temporary zip file
-        fs.unlinkSync('temp.zip');
+        fs.unlinkSync("temp.zip");
 
         if (error) {
-          res.status(500).send({ "err": error });
+          res.status(500).send({ err: error });
         }
 
         console.log(data);
 
-        let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
-          today.getMonth() + 1
-        ).padStart(2, "0")}-${today.getFullYear()};${String(
-          today.getHours()
-        ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+        let logData = `\n${req.loggedUser.id};${String(
+          today.getDate()
+        ).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${today.getFullYear()};${String(today.getHours()).padStart(
+          2,
+          "0"
+        )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
           today.getSeconds()
         ).padStart(2, "0")} uploaded file: `;
 
         const file = new File({
-            name: req.body.name,
-            userId: req.loggedUser.id,
-            dateAdded: date,
-            dateLastEdited: date,
-            file: data.Location
+          name: req.body.name,
+          userId: req.loggedUser.id,
+          dateAdded: date,
+          dateLastEdited: date,
+          file: data.Location,
         });
 
-        let isFile = false
-        files.forEach(aFile => {
-          if(aFile.name === file.name) {
-            isFile = true
-          } 
+        let isFile = false;
+        files.forEach((aFile) => {
+          if (aFile.name === file.name) {
+            isFile = true;
+          }
         });
 
         if (isFile) {
@@ -198,16 +203,16 @@ exports.addMany = async (req, res) => {
               dateLastEdited: date,
               file: data.Location,
             });
-  
+
             //attach file id and get the new action on the logbook
             logData += `${file.id};`;
             fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
               // In case of a error throw err.
               if (err) throw err;
             });
-          })
+          });
         }
-      
+
         // file.save()
         //     .then(result => {
         //         res.status(201).send({
@@ -229,10 +234,9 @@ exports.addMany = async (req, res) => {
         //     .catch(err => {
         //         res.send({ message: err })
         //     })
-      })
-    })
-
-  } catch(err){
+      });
+    });
+  } catch (err) {
     res.status(500).json({
       success: false,
       msg: err.message || "Some error occurred.",
@@ -297,31 +301,35 @@ exports.deleteFile = async (req, res) => {
     };
 
     s3.deleteObject(params, (error, data) => {
-      if(error) {
-        res.status(500).send(error)
+      if (error) {
+        res.status(500).send(error);
       }
 
       //update logbook
-      let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(2, "0")}-${String(
-        today.getMonth() + 1
-      ).padStart(2, "0")}-${today.getFullYear()};${String(
-        today.getHours()
-      ).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+      let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(
+        2,
+        "0"
+      )}-${String(today.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${today.getFullYear()};${String(today.getHours()).padStart(
+        2,
+        "0"
+      )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
         today.getSeconds()
       ).padStart(2, "0")} deleted file: `;
-  
-      logData += `${file.id};`
+
+      logData += `${file.id};`;
       fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
         // In case of a error throw err.
         if (err) throw err;
       });
-  
+
       return res.status(202).json({
         success: true,
         msg: `File with id ${req.params.fileID} was deleted successfully`,
       });
-    })
-
+    });
   } catch (err) {
     console.log(err);
     if (err.name === "CastError") {
