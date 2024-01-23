@@ -41,7 +41,9 @@ exports.findAll = async (req, res) => {
 // ? add one
 exports.addOne = async (req, res) => {
   try {
-    console.log(req.file);
+    let files = await File.find({ userId: req.loggedUser.id }).exec();
+    console.log(files)
+
     if (req.file) {
       const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
@@ -71,23 +73,39 @@ exports.addOne = async (req, res) => {
           dateLastEdited: date,
           file: data.Location,
         });
-        file.save().then((result) => {
-          res.status(200).send({
-            _id: result._id,
-            name: result.name,
-            userId: req.loggedUser.id,
-            dateAdded: date,
-            dateLastEdited: date,
-            file: data.Location,
-          });
+        console.log(file);
 
-          //attach file id and get the new action on the logbook
-          logData += `${file.id};`;
-          fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
-            // In case of a error throw err.
-            if (err) throw err;
-          });
+        let isFile = false
+        files.forEach(aFile => {
+          if(aFile.name === req.file.originalname) {
+            isFile = true
+          } 
         });
+
+        if (isFile) {
+          return res.status(409).json({
+            success: false,
+            msg: `The file you're trying to upload already exists`,
+          });
+        } else {
+          file.save().then((result) => {
+            res.status(200).send({
+              _id: result._id,
+              name: result.name,
+              userId: req.loggedUser.id,
+              dateAdded: date,
+              dateLastEdited: date,
+              file: data.Location,
+            });
+  
+            //attach file id and get the new action on the logbook
+            logData += `${file.id};`;
+            fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+              // In case of a error throw err.
+              if (err) throw err;
+            });
+          })
+        }
       });
     } else {
       res.status(400).json({
@@ -106,7 +124,8 @@ exports.addOne = async (req, res) => {
 // * add many
 exports.addMany = async (req, res) => {
   try{
-       
+    let files = await File.find({ userId: req.loggedUser.id }).exec();
+    
     const zip = archiver('zip');
 
     // Create a stream to store the zip data
@@ -156,28 +175,60 @@ exports.addMany = async (req, res) => {
             dateLastEdited: date,
             file: data.Location
         });
-      
-        file.save()
-            .then(result => {
-                res.status(201).send({
-                    _id: result._id,
-                    name: result.name,
-                    userId: req.loggedUser.id,
-                    dateAdded: date,
-                    dateLastEdited: date,
-                    file: data.Location,
-                })
 
-                //attach file id and get the new action on the logbook
-                logData += `${file.id};`
-                fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
-                  // In case of a error throw err.
-                  if (err) throw err;
-                });
-            })
-            .catch(err => {
-                res.send({ message: err })
-            })
+        let isFile = false
+        files.forEach(aFile => {
+          if(aFile.name === file.name) {
+            isFile = true
+          } 
+        });
+
+        if (isFile) {
+          return res.status(409).json({
+            success: false,
+            msg: `A file with the name ${req.body.name} already exists`,
+          });
+        } else {
+          file.save().then((result) => {
+            res.status(200).send({
+              _id: result._id,
+              name: result.name,
+              userId: req.loggedUser.id,
+              dateAdded: date,
+              dateLastEdited: date,
+              file: data.Location,
+            });
+  
+            //attach file id and get the new action on the logbook
+            logData += `${file.id};`;
+            fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+              // In case of a error throw err.
+              if (err) throw err;
+            });
+          })
+        }
+      
+        // file.save()
+        //     .then(result => {
+        //         res.status(201).send({
+        //             _id: result._id,
+        //             name: result.name,
+        //             userId: req.loggedUser.id,
+        //             dateAdded: date,
+        //             dateLastEdited: date,
+        //             file: data.Location,
+        //         })
+
+        //         //attach file id and get the new action on the logbook
+        //         logData += `${file.id};`
+        //         fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+        //           // In case of a error throw err.
+        //           if (err) throw err;
+        //         });
+        //     })
+        //     .catch(err => {
+        //         res.send({ message: err })
+        //     })
       })
     })
 
