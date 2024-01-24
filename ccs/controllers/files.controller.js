@@ -210,28 +210,6 @@ exports.addMany = async (req, res) => {
             });
           });
         }
-
-        // file.save()
-        //     .then(result => {
-        //         res.status(201).send({
-        //             _id: result._id,
-        //             name: result.name,
-        //             userId: req.loggedUser.id,
-        //             dateAdded: date,
-        //             dateLastEdited: date,
-        //             file: data.Location,
-        //         })
-
-        //         //attach file id and get the new action on the logbook
-        //         logData += `${file.id};`
-        //         fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
-        //           // In case of a error throw err.
-        //           if (err) throw err;
-        //         });
-        //     })
-        //     .catch(err => {
-        //         res.send({ message: err })
-        //     })
       });
     });
   } catch (err) {
@@ -357,7 +335,7 @@ exports.downloadFile = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      download_link: `Download your file with the following link ${file.file}`,
+      download_link: file.file,
     });
   } catch (err) {
     console.log(err);

@@ -118,12 +118,6 @@ exports.login = async (req, res) => {
       user: user,
     });
   } catch (err) {
-    // if (err instanceof ValidationError)
-    //   res.status(400).json({
-    //     success: false,
-    //     msg: err.errors.map((e) => e.message),
-    //   });
-    // else
     res.status(500).json({
       success: false,
       msg: err.message || "Some error occurred at login.",
@@ -133,6 +127,12 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
   try {
+    if(!req.loggedUser){
+      res.status(401).json({
+        success: false,
+        msg: "You must be authenticated!"
+      })
+    }
     let today = new Date();
     let data = `\n${req.loggedUser.id};${String(today.getDate()).padStart(
       2,
