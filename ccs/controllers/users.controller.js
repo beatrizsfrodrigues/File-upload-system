@@ -22,7 +22,6 @@ exports.createUser = async (req, res) => {
           .json({ success: false, msg: `Please provide ${keys[i]}!` });
       }
     }
-
     if (/\s/g.test(req.body.password)) {
       return res.status(400).json({
         success: false,
@@ -33,6 +32,12 @@ exports.createUser = async (req, res) => {
       return res.status(403).json({
         success: false,
         msg: `The passwords that you provided don't match!`,
+      });
+    }
+    if (req.body.email.includes(' ') || !req.body.email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        msg: `Must provide a valid email address!`,
       });
     }
 
