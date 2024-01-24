@@ -333,6 +333,25 @@ exports.downloadFile = async (req, res) => {
       });
     }
 
+    let logData = `\n${req.loggedUser.id};${String(today.getDate()).padStart(
+      2,
+      "0"
+    )}-${String(today.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${today.getFullYear()};${String(today.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(today.getMinutes()).padStart(2, "0")}:${String(
+      today.getSeconds()
+    ).padStart(2, "0")} download file: `;
+
+    logData += `${file.id};`;
+    fs.appendFile("./logbooks/logbook_files.txt", logData, (err) => {
+      // In case of a error throw err.
+      if (err) throw err;
+    });
+
     return res.status(200).json({
       success: true,
       download_link: file.file,
